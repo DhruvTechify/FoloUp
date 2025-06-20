@@ -1,20 +1,19 @@
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+"use server";
+import pool from "@/lib/db";
 import { FeedbackData } from "@/types/response";
 
-const supabase = createClientComponentClient();
-
 const submitFeedback = async (feedbackData: FeedbackData) => {
-  const { error, data } = await supabase
-    .from("feedback")
-    .insert(feedbackData)
-    .select();
-
-  if (error) {
+  try {
+    const keys = Object.keys(feedbackData);
+    const values = Object.values(feedbackData);
+    const placeholders = keys.map((_, i) => `$${i + 1}`).join(", ");
+    const query = `INSERT INTO feedback (${keys.join(", ")}) VALUES (${placeholders}) RETURNING *`;
+    const { rows } = await pool.query(query, values);
+    return rows;
+  } catch (error) {
     console.error("Error submitting feedback:", error);
     throw error;
   }
-
-  return data;
 };
 
 export const FeedbackService = {
